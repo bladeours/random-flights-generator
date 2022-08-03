@@ -1,0 +1,1 @@
+INSERT INTO flight(departure_airport, arrival_airport, departure_date, flight_time, all_seats, free_seats, price, company, distance) VALUES('KGI','BAH','2022-12-22 23:50:00.485668','01:23:35',150,90,503.49,71,9838);
