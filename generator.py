@@ -1,5 +1,6 @@
 from ast import arg, parse
 from datetime import date, datetime
+from dis import dis
 from sqlite3 import Timestamp
 from turtle import distance
 import requests
@@ -20,7 +21,11 @@ parser.add_argument('--ip','-i',help='IP of API')
 args = parser.parse_args()
 
 number_of_rows = int(args.number)
-# number_of_rows = 1
+if args.ip:
+    ip = args.ip
+else:
+    ip = "http://localhost:8081"
+
 codes_array = []
 
 with open("airports_codes.txt") as codes:
@@ -37,23 +42,40 @@ for i in range(number_of_rows):
         arrival_airport = random.choice(codes_array)
     
     departure_date = random_date(datetime.now(),datetime.strptime('2023-08-01 00:00:00',"%Y-%m-%d %H:%M:%S"))
-   
-    flight_time_seconds = random.randrange(60*40,60*60*10)
-    flight_time = time.strftime('%H:%M:%S', time.gmtime(flight_time_seconds))
-   
+    
     all_seats = random.randrange(40,400)
 
     free_seats = random.randrange(0,all_seats)
 
-    price = round(random.uniform(25,2000),2)
-
     company = random.randrange(1,73)
    
-    r = requests.get("http://localhost:8081/distance/{}/{}".format(departure_airport,arrival_airport))
+    r = requests.get("{}/distance/{}/{}".format(ip,departure_airport,arrival_airport))
     distance = r.json()['distance_km']
 
-    print(departure_airport," -> ",arrival_airport, departure_date, flight_time, all_seats, free_seats, price, company, distance, "km")
-    sql ="INSERT INTO flight(departure_airport, arrival_airport, departure_date, flight_time, all_seats, free_seats, price, company, distance) "
+    if distance < 800:
+        fligt_speed = 500
+    else:
+        fligt_speed = 800
+
+    average_flight_time_seconds = (distance/fligt_speed) * 60 * 60
+
+    flight_time_seconds = random.randrange((int)(0.9 * average_flight_time_seconds),(int) (1.1 * average_flight_time_seconds))
+
+    flight_time = time.strftime('%H:%M:%S', time.gmtime(flight_time_seconds))
+
+    if distance < 1000:
+        price_converter = 0.05
+    elif distance < 10000: 
+        price_converter = 0.1
+    else:
+        price_converter = 0.4
+    
+    price_distance = distance * price_converter
+
+    price = round(random.uniform(0.5 * price_distance, 1.5 * price_distance),2)
+
+    # print(departure_airport," -> ",arrival_airport, departure_date, flight_time, all_seats, free_seats, price, company, distance, "km")
+    sql ="INSERT INTO flight(departure_airport, arrival_airport, departure_date, flight_time, all_seats, free_seats, price, company, distance_km) "
     sql = sql + ("VALUES('{}','{}','{}','{}',{},{},{},{},{});\n".format(departure_airport, arrival_airport, departure_date, flight_time, all_seats, free_seats, price, company, distance))
     
     sql_file.write(sql)
